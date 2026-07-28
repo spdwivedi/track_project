@@ -6,6 +6,10 @@ services:
     command: uvicorn sensor:app --host 0.0.0.0 --port 8000
     expose:
       - "8000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sensor.rule=Host(`link.spdwivedi.me`)"
+      - "traefik.http.services.sensor.loadbalancer.server.port=8000"
     restart: always
 
   dashboard:
@@ -13,4 +17,8 @@ services:
     command: streamlit run dashboard.py --server.port 8501 --server.address 0.0.0.0
     expose:
       - "8501"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`panel.spdwivedi.me`)"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=8501"
     restart: always
