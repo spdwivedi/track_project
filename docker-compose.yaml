@@ -4,10 +4,21 @@ services:
   sensor:
     build: .
     command: uvicorn sensor:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sensor.rule=Host(`link.spdwivedi.me`)"
+      - "traefik.http.services.sensor.loadbalancer.server.port=8000"
     restart: always
-    # Coolify uses Traefik labels to route your domains automatically
 
   dashboard:
     build: .
     command: streamlit run dashboard.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`panel.spdwivedi.me`)"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=8501"
     restart: always
