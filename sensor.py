@@ -109,14 +109,16 @@ async def serve_tracker(request: Request, path: str):
 
 @app.post("/api/log")
 async def log_client_data(request: Request, data: ClientData):
-    # Check if the request came through Coolify's reverse proxy
-    forwarded_for = request.headers.get("x-forwarded-for")
-    if forwarded_for:
-        # The first IP in the list is the actual visitor's public IP
-        client_ip = forwarded_for.split(",")[0].strip()
-    else:
-        # Fallback if tested locally without a proxy
-        client_ip = request.client.host
+    # Check for Cloudflare's real visitor IP header first
+    client_ip = request.headers.get("cf-connecting-ip")
+    
+    if not client_ip:
+        # Fallback to standard x-forwarded-for
+        forwarded_for = request.headers.get("x-forwarded-for")
+        if forwarded_for:
+            client_ip = forwarded_for.split(",")[0].strip()
+        else:
+            client_ip = request.client.host
 
     user_agent = request.headers.get("user-agent", "Unknown") 
     lat, lon, city = get_geoip(client_ip)
@@ -124,7 +126,7 @@ async def log_client_data(request: Request, data: ClientData):
     
     log_entry = {
         "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "IP_Address": client_ip, # Now saves the real public IP
+        "IP_Address": client_ip, 
         "Method": "GET",
         "Path": data.path,
         "User_Agent": user_agent,
