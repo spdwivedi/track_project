@@ -5,3 +5,5 @@ pandas
 requests
 user-agents
 pydantic
+pymongo
+python-dotenv
