@@ -109,15 +109,22 @@ async def serve_tracker(request: Request, path: str):
 
 @app.post("/api/log")
 async def log_client_data(request: Request, data: ClientData):
-    client_ip = request.client.host
+    # Check if the request came through Coolify's reverse proxy
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        # The first IP in the list is the actual visitor's public IP
+        client_ip = forwarded_for.split(",")[0].strip()
+    else:
+        # Fallback if tested locally without a proxy
+        client_ip = request.client.host
+
     user_agent = request.headers.get("user-agent", "Unknown") 
     lat, lon, city = get_geoip(client_ip)
     resolution = f"{data.screenWidth}x{data.screenHeight}"
     
-    # Create a Python Dictionary (MongoDB Document)
     log_entry = {
         "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "IP_Address": client_ip,
+        "IP_Address": client_ip, # Now saves the real public IP
         "Method": "GET",
         "Path": data.path,
         "User_Agent": user_agent,
@@ -136,9 +143,7 @@ async def log_client_data(request: Request, data: ClientData):
         "Referrer": data.referrer
     }
     
-    # Insert directly into MongoDB
     collection.insert_one(log_entry)
-    
     return {"status": "success"}
 
 if __name__ == "__main__":
